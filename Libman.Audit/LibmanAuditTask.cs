@@ -27,6 +27,7 @@ public class LibmanAuditTask : Task
     public LibmanAuditTask()
     {
         _httpClient = new HttpClient();
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Libman.Audit/1.0");
         // initialize non-null values
         LibmanJsonPath = "";
         VulnerablePackages = Array.Empty<ITaskItem>();

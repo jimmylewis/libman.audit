@@ -1,5 +1,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <UsingTask TaskName="Libman.Audit.LibmanAuditTask" AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\$(TargetFramework)\Libman.Audit.dll" />
+  <!-- Determine the appropriate path based on the MSBuild runtime -->
+  <PropertyGroup>
+    <IsDotNetCoreMSBuild Condition="'$(MSBuildRuntimeType)' == 'Core'">true</IsDotNetCoreMSBuild>
+    <IsFullFrameworkMSBuild Condition="'$(MSBuildRuntimeType)' == 'Full'">true</IsFullFrameworkMSBuild>
+    <TaskAssemblyPath Condition="'$(IsDotNetCoreMSBuild)' == 'true'">$(MSBuildThisFileDirectory)..\build\net8.0\Libman.Audit.dll</TaskAssemblyPath>
+    <TaskAssemblyPath Condition="'$(IsFullFrameworkMSBuild)' == 'true'">$(MSBuildThisFileDirectory)..\build\net48\Libman.Audit.dll</TaskAssemblyPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Libman.Audit.LibmanAuditTask" AssemblyFile="$(TaskAssemblyPath)" />
   
   <Target Name="AuditLibman" BeforeTargets="Build">
     <LibmanAuditTask LibmanJsonPath="$(MSBuildProjectDirectory)\libman.json" Condition="Exists('$(MSBuildProjectDirectory)\libman.json')">

@@ -8,8 +8,9 @@
     
     <!-- NuGet package properties -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+    <BuildOutputTargetFolder>build</BuildOutputTargetFolder>
     <DevelopmentDependency>true</DevelopmentDependency>
+    <NoWarn>NU5128</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

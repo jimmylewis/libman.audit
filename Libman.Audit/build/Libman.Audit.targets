@@ -1,0 +1,13 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="Libman.Audit.LibmanAuditTask" AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\$(TargetFramework)\Libman.Audit.dll" />
+  
+  <Target Name="AuditLibman" BeforeTargets="Build">
+    <LibmanAuditTask LibmanJsonPath="$(MSBuildProjectDirectory)\libman.json" Condition="Exists('$(MSBuildProjectDirectory)\libman.json')">
+      <Output TaskParameter="VulnerablePackages" ItemName="VulnerableLibmanPackages" />
+    </LibmanAuditTask>
+    
+    <Message Text="Found @(VulnerableLibmanPackages->Count()) vulnerable packages in libman.json" 
+             Importance="High" 
+             Condition="'@(VulnerableLibmanPackages)' != ''" />
+  </Target>
+</Project>

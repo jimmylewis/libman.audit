@@ -29,7 +29,7 @@ public class LibmanAuditTask : Task
         _httpClient = new HttpClient();
         // initialize non-null values
         LibmanJsonPath = "";
-        VulnerablePackages = [];
+        VulnerablePackages = Array.Empty<ITaskItem>();
     }
 
     public override bool Execute()
@@ -62,7 +62,7 @@ public class LibmanAuditTask : Task
                 Log.LogWarning($"Found {vulnerablePackages.Count} vulnerable packages in libman.json");
                 foreach (VulnerablePackage package in vulnerablePackages)
                 {
-                    Log.LogWarning($"Vulnerable package: {package.Name} {package.Version}, Vulnerability count: {package.VulnerabilityCount}");
+                    Log.LogWarning($"Vulnerable package: {package.Name} {package.Version}, Vulnerability count: {package.VulnerabilityCount}, Severity: {package.Severity}");
                 }
             }
             else
@@ -197,13 +197,15 @@ public class LibmanAuditTask : Task
                                     LibmanPackage? package = batch.FirstOrDefault(p => GetPackageCoordinates(p) == result.Coordinates);
                                     if (package != null)
                                     {
+                                        string severity = DetermineSeverity(result.Vulnerabilities);
                                         vulnerablePackages.Add(new VulnerablePackage
                                         {
                                             Name = package.Name,
                                             Version = package.Version,
                                             Provider = package.Provider,
                                             VulnerabilityCount = result.Vulnerabilities.Count,
-                                            Description = string.Join("; ", result.Vulnerabilities.Select(v => v.Title))
+                                            Description = string.Join("; ", result.Vulnerabilities.Select(v => v.Title)),
+                                            Severity = severity
                                         });
                                     }
                                 }
@@ -223,6 +225,24 @@ public class LibmanAuditTask : Task
         }
 
         return vulnerablePackages;
+    }
+
+    private string DetermineSeverity(List<Vulnerability> vulnerabilities)
+    {
+        // Determine the highest severity level among the vulnerabilities
+        if (vulnerabilities.Any(v => v.CvssScore >= 9.0))
+        {
+            return "Critical";
+        }
+        if (vulnerabilities.Any(v => v.CvssScore >= 7.0))
+        {
+            return "High";
+        }
+        if (vulnerabilities.Any(v => v.CvssScore >= 4.0))
+        {
+            return "Medium";
+        }
+        return "Low";
     }
 
     private string GetPackageCoordinates(LibmanPackage package)
@@ -253,6 +273,7 @@ public class LibmanAuditTask : Task
             taskItem.SetMetadata("Provider", package.Provider);
             taskItem.SetMetadata("VulnerabilityCount", package.VulnerabilityCount.ToString());
             taskItem.SetMetadata("Description", package.Description);
+            taskItem.SetMetadata("Severity", package.Severity);
             taskItems.Add(taskItem);
         }
 

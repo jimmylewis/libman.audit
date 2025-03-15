@@ -9,4 +9,5 @@ public class VulnerablePackage
     public string Provider { get; set; } = string.Empty;
     public int VulnerabilityCount { get; set; }
     public string Description { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
 }

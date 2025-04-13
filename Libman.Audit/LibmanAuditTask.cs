@@ -10,6 +10,15 @@ namespace Libman.Audit;
 
 public class LibmanAuditTask : Task
 {
+    private readonly Dictionary<string, int> s_severityRanking = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Critical", 4 },
+            { "High", 3 },
+            { "Medium", 2 },
+            { "Low", 1 },
+            { "Unknown", 0 }
+        };
+
     [Required]
     public string LibmanJsonPath { get; set; }
 
@@ -17,7 +26,7 @@ public class LibmanAuditTask : Task
     public ITaskItem[] VulnerablePackages { get; private set; }
 
     private readonly HttpClient _httpClient;
-    private const string SonatypeApiBaseUrl = "https://ossindex.sonatype.org/api/v3/component-report";
+    private const string GitHubApiUrl = "https://api.github.com/advisories";
     private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true,
@@ -35,6 +44,11 @@ public class LibmanAuditTask : Task
 
     public override bool Execute()
     {
+        return ExecuteAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task<bool> ExecuteAsync()
+    {
         try
         {
             Log.LogMessage(MessageImportance.Normal, "Starting Libman audit task...");
@@ -44,8 +58,11 @@ public class LibmanAuditTask : Task
                 Log.LogError($"Libman.json file not found at: {LibmanJsonPath}");
                 return false;
             }
-
+#if NETFRAMEWORK
             string jsonContent = File.ReadAllText(LibmanJsonPath);
+#else
+            string jsonContent = await File.ReadAllTextAsync(LibmanJsonPath);
+#endif
             List<LibmanPackage> libmanPackages = ParseLibmanJson(jsonContent);
 
             if (libmanPackages.Count == 0)
@@ -55,7 +72,7 @@ public class LibmanAuditTask : Task
                 return true;
             }
 
-            List<VulnerablePackage> vulnerablePackages = AuditPackagesAsync(libmanPackages).GetAwaiter().GetResult();
+            List<VulnerablePackage> vulnerablePackages = await AuditPackagesAsync(libmanPackages);
             VulnerablePackages = ConvertToTaskItems(vulnerablePackages);
 
             if (vulnerablePackages.Count > 0)
@@ -151,72 +168,74 @@ public class LibmanAuditTask : Task
 
     private async Task<List<VulnerablePackage>> AuditPackagesAsync(List<LibmanPackage> packages)
     {
-        List<VulnerablePackage> vulnerablePackages = new List<VulnerablePackage>();
+        Dictionary<string, VulnerablePackage> packageVulnerabilities = new Dictionary<string, VulnerablePackage>();
+        System.Diagnostics.Debugger.Launch();
 
         try
         {
-            // Group packages in batches to avoid large requests
-            for (int i = 0; i < packages.Count; i += 20)
+            foreach (LibmanPackage package in packages)
             {
-                List<LibmanPackage> batch = packages.Skip(i).Take(20).ToList();
-                List<string> components = new List<string>();
+                string url = $"{GitHubApiUrl}?package={package.Name}&version={package.Version}";
+                HttpResponseMessage response = await _httpClient.GetAsync(url);
 
-                foreach (LibmanPackage package in batch)
+                if (response.IsSuccessStatusCode)
                 {
-                    string packageId = GetPackageCoordinates(package);
-                    if (!string.IsNullOrEmpty(packageId))
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    List<GitHubAdvisory>? advisories = JsonSerializer.Deserialize<List<GitHubAdvisory>>(responseContent, _jsonOptions);
+
+                    if (advisories != null && advisories.Count > 0)
                     {
-                        components.Add(packageId);
-                    }
-                }
+                        // Create a unique key for this package
+                        string packageKey = $"{package.Name}|{package.Version}|{package.Provider}";
 
-                if (components.Count > 0)
-                {
-                    SonatypeRequest requestData = new SonatypeRequest
-                    {
-                        Coordinates = components.ToArray()
-                    };
-
-                    StringContent content = new StringContent(
-                        JsonSerializer.Serialize(requestData, _jsonOptions),
-                        Encoding.UTF8,
-                        "application/json");
-
-                    HttpResponseMessage response = await _httpClient.PostAsync(SonatypeApiBaseUrl, content);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        List<SonatypeResult>? results = JsonSerializer.Deserialize<List<SonatypeResult>>(responseContent, _jsonOptions);
-
-                        if (results != null)
+                        // Get or create an entry for this package
+                        if (!packageVulnerabilities.TryGetValue(packageKey, out VulnerablePackage? vulnerablePackage))
                         {
-                            foreach (SonatypeResult result in results)
+                            vulnerablePackage = new VulnerablePackage
                             {
-                                if (result.Vulnerabilities != null && result.Vulnerabilities.Count > 0)
-                                {
-                                    LibmanPackage? package = batch.FirstOrDefault(p => GetPackageCoordinates(p) == result.Coordinates);
-                                    if (package != null)
-                                    {
-                                        string severity = DetermineSeverity(result.Vulnerabilities);
-                                        vulnerablePackages.Add(new VulnerablePackage
-                                        {
-                                            Name = package.Name,
-                                            Version = package.Version,
-                                            Provider = package.Provider,
-                                            VulnerabilityCount = result.Vulnerabilities.Count,
-                                            Description = string.Join("; ", result.Vulnerabilities.Select(v => v.Title)),
-                                            Severity = severity
-                                        });
-                                    }
-                                }
+                                Name = package.Name,
+                                Version = package.Version,
+                                Provider = package.Provider,
+                                VulnerabilityCount = 0,
+                                Description = string.Empty,
+                                Severity = string.Empty
+                            };
+                            packageVulnerabilities.Add(packageKey, vulnerablePackage);
+                        }
+
+                        // Update total vulnerability count
+                        vulnerablePackage.VulnerabilityCount = advisories.Count;
+
+                        // Count occurrences of each severity level
+                        Dictionary<string, int> severityCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                        foreach (GitHubAdvisory advisory in advisories)
+                        {
+                            string severity = string.IsNullOrEmpty(advisory.Severity) ? "Unknown" : advisory.Severity;
+                            if (severityCounts.ContainsKey(severity))
+                            {
+                                severityCounts[severity]++;
+                            }
+                            else
+                            {
+                                severityCounts[severity] = 1;
                             }
                         }
+
+                        // Create a summary description
+                        List<string> severitySummaries = new List<string>();
+                        foreach (KeyValuePair<string, int> severityCount in severityCounts)
+                        {
+                            severitySummaries.Add($"{severityCount.Value} {severityCount.Key}");
+                        }
+                        vulnerablePackage.Description = string.Join(", ", severitySummaries);
+
+                        // Determine maximum severity level
+                        vulnerablePackage.Severity = GetMaxSeverity(advisories.Select(a => a.Severity).ToList());
                     }
-                    else
-                    {
-                        Log.LogWarning($"Failed to get vulnerability data: {response.StatusCode} {await response.Content.ReadAsStringAsync()}");
-                    }
+                }
+                else
+                {
+                    Log.LogWarning($"Failed to get vulnerability data: {response.StatusCode} {await response.Content.ReadAsStringAsync()}");
                 }
             }
         }
@@ -225,42 +244,34 @@ public class LibmanAuditTask : Task
             Log.LogWarning($"Error checking for vulnerabilities: {ex.Message}");
         }
 
-        return vulnerablePackages;
+        return packageVulnerabilities.Values.ToList();
     }
 
-    private string DetermineSeverity(List<Vulnerability> vulnerabilities)
+    private string GetMaxSeverity(List<string> severities)
     {
-        // Determine the highest severity level among the vulnerabilities
-        if (vulnerabilities.Any(v => v.CvssScore >= 9.0))
+        if (severities == null || severities.Count == 0)
         {
-            return "Critical";
+            return "Unknown";
         }
-        if (vulnerabilities.Any(v => v.CvssScore >= 7.0))
-        {
-            return "High";
-        }
-        if (vulnerabilities.Any(v => v.CvssScore >= 4.0))
-        {
-            return "Medium";
-        }
-        return "Low";
-    }
 
-    private string GetPackageCoordinates(LibmanPackage package)
-    {
-        // Map libman providers to Sonatype coordinate formats
-        switch (package.Provider.ToLowerInvariant())
+        string maxSeverity = "Unknown";
+        int maxRank = 0;
+
+        foreach (string severity in severities)
         {
-            case "cdnjs":
-                return $"pkg:npm/{package.Name}@{package.Version}";
-            case "unpkg":
-                return $"pkg:npm/{package.Name}@{package.Version}";
-            case "jsdelivr":
-                return $"pkg:npm/{package.Name}@{package.Version}";
-            default:
-                Log.LogWarning($"Unsupported provider: {package.Provider}");
-                return "";
+            string normalizedSeverity = string.IsNullOrEmpty(severity) ? "Unknown" : severity;
+
+            if (s_severityRanking.TryGetValue(normalizedSeverity, out int rank))
+            {
+                if (rank > maxRank)
+                {
+                    maxRank = rank;
+                    maxSeverity = normalizedSeverity;
+                }
+            }
         }
+
+        return maxSeverity;
     }
 
     private ITaskItem[] ConvertToTaskItems(List<VulnerablePackage> vulnerablePackages)

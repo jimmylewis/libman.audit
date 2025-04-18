@@ -344,4 +344,82 @@ public class LibmanJsonParserTests
         Assert.Empty(result);
         _logger.Received(1).LogError(Arg.Any<string>());
     }
+
+    [Fact]
+    public void Parse_ValidJson_WithFilesystemProvider_ShouldNotSplitOnAtSymbol()
+    {
+        // Arrange
+        string jsonContent = """
+        {
+            "version": "1.0",
+            "libraries": [
+                {
+                    "library": "local@lib",
+                    "provider": "filesystem"
+                }
+            ]
+        }
+        """;
+
+        // Act
+        var result = _sut.Parse(jsonContent);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("local@lib", result[0].Name);
+        Assert.Equal("", result[0].Version);
+        Assert.Equal("filesystem", result[0].Provider);
+    }
+
+    [Fact]
+    public void Parse_ValidJson_WithUnpkgProvider_WithScopedPackage_ShouldSplitOnSecondAtSymbol()
+    {
+        // Arrange
+        string jsonContent = """
+        {
+            "version": "1.0",
+            "libraries": [
+                {
+                    "library": "@scope/package@1.0.0",
+                    "provider": "unpkg"
+                }
+            ]
+        }
+        """;
+
+        // Act
+        var result = _sut.Parse(jsonContent);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("@scope/package", result[0].Name);
+        Assert.Equal("1.0.0", result[0].Version);
+        Assert.Equal("unpkg", result[0].Provider);
+    }
+
+    [Fact]
+    public void Parse_ValidJson_WithJsdelivrProvider_WithScopedPackage_ShouldSplitOnSecondAtSymbol()
+    {
+        // Arrange
+        string jsonContent = """
+        {
+            "version": "1.0",
+            "libraries": [
+                {
+                    "library": "@scope/package@2.0.0",
+                    "provider": "jsdelivr"
+                }
+            ]
+        }
+        """;
+
+        // Act
+        var result = _sut.Parse(jsonContent);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("@scope/package", result[0].Name);
+        Assert.Equal("2.0.0", result[0].Version);
+        Assert.Equal("jsdelivr", result[0].Provider);
+    }
 }

@@ -55,7 +55,28 @@ public class LibmanJsonParser : ILibmanJsonParser
                     string packageName;
                     string packageVersion;
 
-                    if (name.Contains("@"))
+                    if (provider == "filesystem")
+                    {
+                        // Filesystem packages don't split on '@'
+                        packageName = name;
+                        packageVersion = string.Empty;
+                    }
+                    else if ((provider == "unpkg" || provider == "jsdelivr") && name.StartsWith("@"))
+                    {
+                        // Scoped NPM packages split on the second '@'
+                        int secondAtIndex = name.IndexOf('@', 1);
+                        if (secondAtIndex > 0)
+                        {
+                            packageName = name.Substring(0, secondAtIndex);
+                            packageVersion = name.Substring(secondAtIndex + 1);
+                        }
+                        else
+                        {
+                            packageName = name;
+                            packageVersion = string.Empty;
+                        }
+                    }
+                    else if (name.Contains("@"))
                     {
                         string[] parts = name.Split(new[] { '@' }, 2);
                         packageName = parts[0];

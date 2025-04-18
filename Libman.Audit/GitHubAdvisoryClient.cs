@@ -23,7 +23,7 @@ public class GitHubAdvisoryClient : IGitHubAdvisoryClient
 
     public async Task<AdvisoryResult> GetAdvisoriesAsync(string packageName, string packageVersion)
     {
-        string url = $"{GitHubApiUrl}?package={packageName}&version={packageVersion}";
+        string url = $"{GitHubApiUrl}?affects={packageName}@{packageVersion}";
 
         try
         {

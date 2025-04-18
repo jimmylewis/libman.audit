@@ -31,18 +31,10 @@ public class GitHubAdvisoryClient : IGitHubAdvisoryClient
 
             if (!response.IsSuccessStatusCode)
             {
-                // Check if we have connectivity issues
-                if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable ||
-                    response.StatusCode == System.Net.HttpStatusCode.RequestTimeout ||
-                    response.StatusCode == System.Net.HttpStatusCode.GatewayTimeout)
-                {
-                    return new AdvisoryResult(
-                        new List<GitHubAdvisory>(),
-                        $"Warning: Unable to access GitHub Advisory API due to connectivity issues. Security vulnerabilities cannot be checked for {packageName} {packageVersion}."
-                    );
-                }
-
-                return new AdvisoryResult(new List<GitHubAdvisory>());
+                return new AdvisoryResult(
+                    new List<GitHubAdvisory>(),
+                    $"Warning: Unable to access GitHub Advisory API due to connectivity issues.  Response code {(int)response.StatusCode}. Security vulnerabilities cannot be checked for {packageName} {packageVersion}."
+                );
             }
 
             string responseContent = await response.Content.ReadAsStringAsync();

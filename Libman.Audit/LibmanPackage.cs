@@ -1,5 +1,3 @@
-using System;
-
 namespace Libman.Audit;
 
 public class LibmanPackage

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Build.Framework;
 
 namespace Libman.Audit;
 
@@ -22,8 +21,13 @@ public class LibmanJsonParser : ILibmanJsonParser
             {
                 JsonElement root = doc.RootElement;
 
-                if (!root.TryGetProperty("libraries", out JsonElement librariesElement) ||
-                    librariesElement.ValueKind != JsonValueKind.Array)
+                // Get defaultProvider from the root object
+                string defaultProvider = root.TryGetProperty("defaultProvider", out JsonElement defaultProviderElement)
+                    ? defaultProviderElement.GetString() ?? string.Empty
+                    : string.Empty;
+
+                if (!root.TryGetProperty("libraries", out JsonElement librariesElement) 
+                    || librariesElement.ValueKind != JsonValueKind.Array)
                 {
                     _logger.LogMessage("No libraries found in libman.json");
                     return packages;
@@ -31,13 +35,15 @@ public class LibmanJsonParser : ILibmanJsonParser
 
                 foreach (JsonElement library in librariesElement.EnumerateArray())
                 {
-                    if (!library.TryGetProperty("provider", out JsonElement providerElement) ||
-                        !library.TryGetProperty("library", out JsonElement nameElement))
+                    string provider = library.TryGetProperty("provider", out JsonElement providerElement)
+                        ? providerElement.GetString() ?? string.Empty
+                        : defaultProvider; // Use defaultProvider if provider is missing
+
+                    if (!library.TryGetProperty("library", out JsonElement nameElement))
                     {
                         continue;
                     }
 
-                    string provider = providerElement.GetString() ?? string.Empty;
                     string name = nameElement.GetString() ?? string.Empty;
 
                     if (string.IsNullOrEmpty(provider) || string.IsNullOrEmpty(name))
@@ -70,6 +76,11 @@ public class LibmanJsonParser : ILibmanJsonParser
                     });
 
                     _logger.LogMessage($"Found package: {packageName} {packageVersion} (Provider: {provider})", LogLevel.Low);
+                }
+
+                if (packages.Count == 0)
+                {
+                    _logger.LogMessage("No libraries found in libman.json");
                 }
             }
         }

@@ -12,9 +12,9 @@ public class MsBuildLogger : ILogger
         _log = log;
     }
 
-    public void LogMessage(string message, MessageImportance importance = MessageImportance.Normal)
+    public void LogMessage(string message, LogLevel level = LogLevel.Normal)
     {
-        _log.LogMessage(importance, message);
+        _log.LogMessage(MapToMessageImportance(level), message);
     }
 
     public void LogWarning(string message)
@@ -25,5 +25,16 @@ public class MsBuildLogger : ILogger
     public void LogError(string message)
     {
         _log.LogError(message);
+    }
+
+    private static MessageImportance MapToMessageImportance(LogLevel level)
+    {
+        return level switch
+        {
+            LogLevel.Low => MessageImportance.Low,
+            LogLevel.Normal => MessageImportance.Normal,
+            LogLevel.High => MessageImportance.High,
+            _ => MessageImportance.Normal
+        };
     }
 }

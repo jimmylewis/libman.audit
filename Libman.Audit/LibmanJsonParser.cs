@@ -69,7 +69,7 @@ public class LibmanJsonParser : ILibmanJsonParser
                         Provider = provider
                     });
 
-                    _logger.LogMessage($"Found package: {packageName} {packageVersion} (Provider: {provider})", MessageImportance.Low);
+                    _logger.LogMessage($"Found package: {packageName} {packageVersion} (Provider: {provider})", LogLevel.Low);
                 }
             }
         }

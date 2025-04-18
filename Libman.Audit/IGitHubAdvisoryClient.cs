@@ -2,5 +2,5 @@ namespace Libman.Audit;
 
 public interface IGitHubAdvisoryClient
 {
-    Task<List<GitHubAdvisory>> GetAdvisoriesAsync(string packageName, string packageVersion);
+    Task<AdvisoryResult> GetAdvisoriesAsync(string packageName, string packageVersion);
 }

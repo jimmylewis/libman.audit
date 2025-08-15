@@ -28,9 +28,9 @@ jobs:
         dotnet-version: 8.0.x
     - name: Create output directory
       run: |
-        set output_dir=./artifacts
-        mkdir -p $output_dir
-        echo "NuGetDirectory=$output_dir" >> $GITHUB_ENV
+        OUTDIR=./artifacts
+        mkdir -p $OUTDIR
+        echo "NuGetDirectory=$OUTDIR" >> $GITHUB_ENV
     - name: Restore dependencies
       run: dotnet restore
     - name: Test
@@ -40,6 +40,7 @@ jobs:
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: build artifacts
         path: |

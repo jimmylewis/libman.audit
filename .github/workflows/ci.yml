@@ -22,9 +22,23 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    - name: Create output directory
+      run: |
+        echo "NuGetDirectory=./artifacts" >> $GITHUB_ENV
+        mkdir -p ${{ env.NuGetDirectory }}
     - name: Restore dependencies
       run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+    - name: Run Tests
+      run: dotnet test --no-restore --verbosity normal
+    - name: Build and pack
+      run: dotnet pack --no-restore --bl --configuration Release --output ${{ env.NuGetDirectory }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build artifacts
+        path: |
+          ${{ env.NuGetDirectory }}/libman.audit.*.nupkg
+          ${{ env.NuGetDirectory }}/libman.audit.*.snupkg
+          **/*.binlog
+          **/*.trx

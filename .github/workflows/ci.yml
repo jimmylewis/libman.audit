@@ -42,7 +42,7 @@ jobs:
       with:
         name: build artifacts
         path: |
-          ${{ env.NuGetDirectory }}/libman.audit.*.nupkg
-          ${{ env.NuGetDirectory }}/libman.audit.*.snupkg
+          ${{ env.NuGetDirectory }}/Libman.Audit.*.nupkg
+          ${{ env.NuGetDirectory }}/Libman.Audit.*.snupkg
           **/*.binlog
           **/*.trx

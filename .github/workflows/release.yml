@@ -31,12 +31,10 @@ jobs:
         OUTDIR=./artifacts
         mkdir -p $OUTDIR
         echo "NuGetDirectory=$OUTDIR" >> $GITHUB_ENV
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+    - name: Run Tests
+      run: dotnet test --verbosity normal
     - name: Build and pack
-      run: dotnet pack --no-restore --bl --configuration Release --output ${{ env.NuGetDirectory }}
+      run: dotnet pack --bl --configuration Release --output ${{ env.NuGetDirectory }}
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

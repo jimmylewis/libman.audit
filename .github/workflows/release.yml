@@ -51,6 +51,8 @@ jobs:
           **/*.binlog
           **/*.trx
 
+    - name: Install Nerdbank.GitVersioning tool
+      run: dotnet tool install -g nbgv
     - name: Get version from nbgv
       id: nbgv
       run: |

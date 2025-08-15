@@ -28,8 +28,9 @@ jobs:
         dotnet-version: 8.0.x
     - name: Create output directory
       run: |
-        echo "NuGetDirectory=./artifacts" >> $GITHUB_ENV
-        mkdir -p ${{ env.NuGetDirectory }}
+        set output_dir=./artifacts
+        mkdir -p $output_dir
+        echo "NuGetDirectory=$output_dir" >> $GITHUB_ENV
     - name: Restore dependencies
       run: dotnet restore
     - name: Test

@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Release name'
+        required: false
+      release_notes:
+        description: 'Release notes'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 #nbgv doesn't work with shallow checkout
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Create output directory
+      run: |
+        echo "NuGetDirectory=./artifacts" >> $GITHUB_ENV
+        mkdir -p ${{ env.NuGetDirectory }}
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+    - name: Build and pack
+      run: dotnet pack --no-restore --bl --configuration Release --output ${{ env.NuGetDirectory }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build artifacts
+        path: |
+          ${{ env.NuGetDirectory }}/libman.audit.*.nupkg
+          ${{ env.NuGetDirectory }}/libman.audit.*.snupkg
+          **/*.binlog
+          **/*.trx
+
+    - name: Get version from nbgv
+      id: nbgv
+      run: |
+        VERSION=$(nbgv get-version -v NuGetPackageVersion)
+        echo "NBGV_VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Create tag if not exists (manual only)
+      if: github.event_name == 'workflow_dispatch'
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+          TAG="v${NBGV_VERSION}"
+          echo "Version from nbgv: $TAG"
+          if ! git tag --points-at HEAD | grep "$TAG"; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "Created and pushed tag $TAG"
+          else
+            echo "Tag $TAG already exists for this commit."
+          fi
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+          tag_name: ${{ format('v{0}', env.NBGV_VERSION) }}
+          name: Release ${{ github.event.inputs.release_name || format('v{0}', env.NBGV_VERSION) }}
+          body: ${{ github.event.inputs.release_notes }}
+          files: |
+            ${{ env.NuGetDirectory }}/libman.audit.*.nupkg
+            ${{ env.NuGetDirectory }}/libman.audit.*.snupkg
+          generate_release_notes: true
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish NuGet package
+      run: |
+        foreach($file in (Get-ChildItem "${{ env.NuGetDirectory }}" -Recurse -Include libman.audit.*.nupkg)) {
+            dotnet nuget push $file --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        }

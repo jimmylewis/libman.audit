@@ -83,14 +83,14 @@ jobs:
           name: Release ${{ github.event.inputs.release_name || format('v{0}', env.NBGV_VERSION) }}
           body: ${{ github.event.inputs.release_notes }}
           files: |
-            ${{ env.NuGetDirectory }}/libman.audit.*.nupkg
-            ${{ env.NuGetDirectory }}/libman.audit.*.snupkg
+            ${{ env.NuGetDirectory }}/Libman.Audit.*.nupkg
+            ${{ env.NuGetDirectory }}/Libman.Audit.*.snupkg
           generate_release_notes: true
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish NuGet package
       run: |
-        foreach($file in (Get-ChildItem "${{ env.NuGetDirectory }}" -Recurse -Include libman.audit.*.nupkg)) {
+        foreach($file in (Get-ChildItem "${{ env.NuGetDirectory }}" -Recurse -Include Libman.Audit.*.nupkg)) {
             dotnet nuget push $file --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
         }

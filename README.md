@@ -1,6 +1,6 @@
 # Libman.Audit
 
-[![.NET CI/CD](https://github.com/yourusername/libman-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/libman-audit/actions/workflows/ci.yml)
+[![.NET CI/CD](https://github.com/jimmylewis/libman.audit/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/libman-audit/actions/workflows/ci.yml)
 <!--
 [![NuGet Version](https://img.shields.io/nuget/v/Libman.Audit.svg)](https://www.nuget.org/packages/Libman.Audit/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Libman.Audit.svg)](https://www.nuget.org/packages/Libman.Audit/)

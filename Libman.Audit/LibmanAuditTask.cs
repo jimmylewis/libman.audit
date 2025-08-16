@@ -83,10 +83,9 @@ public class LibmanAuditTask : Task
             // Analyze packages for vulnerabilities
             List<VulnerablePackage> vulnerablePackages = await _vulnerabilityAnalyzer.AnalyzePackagesAsync(libmanPackages);
 
-            System.Diagnostics.Debugger.Launch(); // For debugging purposes, remove in production
             if (vulnerablePackages.Count > 0)
             {
-                _logger.LogWarning($"Found {vulnerablePackages.Count} vulnerable packages in libman.json");
+                _logger.LogMessage($"Found {vulnerablePackages.Count} vulnerable packages in libman.json");
                 foreach (VulnerablePackage package in vulnerablePackages)
                 {
                     if (package.Severity.Equals("critical", StringComparison.OrdinalIgnoreCase)

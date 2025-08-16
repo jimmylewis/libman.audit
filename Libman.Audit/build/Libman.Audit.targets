@@ -9,7 +9,7 @@
 
   <UsingTask TaskName="Libman.Audit.LibmanAuditTask" AssemblyFile="$(TaskAssemblyPath)" />
   
-  <Target Name="AuditLibman" BeforeTargets="Build">
+  <Target Name="AuditLibman" BeforeTargets="Build" Condition="'$(SkipLibmanAudit)' != 'true'">
     <LibmanAuditTask LibmanJsonPath="$(MSBuildProjectDirectory)\libman.json"
                      Condition="Exists('$(MSBuildProjectDirectory)\libman.json')" />
   </Target>

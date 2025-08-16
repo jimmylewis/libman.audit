@@ -16,15 +16,20 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="All" />
-    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="System.Text.Json" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <PackageReference Include="System.Net.Http" />
+    <PackageReference Include="System.Net.Http" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="build\Libman.Audit.targets" PackagePath="build\Libman.Audit.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
   </ItemGroup>
 
 </Project>

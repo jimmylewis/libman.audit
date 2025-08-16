@@ -15,9 +15,6 @@ public class LibmanAuditTask : Task
     [Required]
     public string LibmanJsonPath { get; set; }
 
-    [Output]
-    public ITaskItem[] VulnerablePackages { get; private set; }
-
     // Constructor for MSBuild to use
     public LibmanAuditTask()
     {
@@ -32,7 +29,6 @@ public class LibmanAuditTask : Task
 
         // initialize non-null values
         LibmanJsonPath = "";
-        VulnerablePackages = Array.Empty<ITaskItem>();
         _logger = logger;
     }
 
@@ -50,7 +46,6 @@ public class LibmanAuditTask : Task
 
         // initialize non-null values
         LibmanJsonPath = "";
-        VulnerablePackages = Array.Empty<ITaskItem>();
     }
 
     public override bool Execute()
@@ -62,7 +57,7 @@ public class LibmanAuditTask : Task
     {
         try
         {
-            _logger.LogMessage("Starting Libman audit task...");
+            _logger.LogMessage("Starting Libman audit task...", LogLevel.Low);
 
             if (!File.Exists(LibmanJsonPath))
             {
@@ -82,15 +77,11 @@ public class LibmanAuditTask : Task
             if (libmanPackages.Count == 0)
             {
                 _logger.LogMessage("No packages found in libman.json");
-                VulnerablePackages = Array.Empty<ITaskItem>();
                 return true;
             }
 
             // Analyze packages for vulnerabilities
             List<VulnerablePackage> vulnerablePackages = await _vulnerabilityAnalyzer.AnalyzePackagesAsync(libmanPackages);
-
-            // Convert to task items
-            VulnerablePackages = _taskItemConverter.ConvertToTaskItems(vulnerablePackages);
 
             if (vulnerablePackages.Count > 0)
             {
@@ -102,7 +93,7 @@ public class LibmanAuditTask : Task
             }
             else
             {
-                _logger.LogMessage("No vulnerable packages found");
+                _logger.LogMessage("No vulnerable packages found", LogLevel.Low);
             }
 
             return true;

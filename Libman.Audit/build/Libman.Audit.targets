@@ -10,18 +10,7 @@
   <UsingTask TaskName="Libman.Audit.LibmanAuditTask" AssemblyFile="$(TaskAssemblyPath)" />
   
   <Target Name="AuditLibman" BeforeTargets="Build">
-    <LibmanAuditTask LibmanJsonPath="$(MSBuildProjectDirectory)\libman.json" Condition="Exists('$(MSBuildProjectDirectory)\libman.json')">
-      <Output TaskParameter="VulnerablePackages" ItemName="VulnerableLibmanPackages" />
-    </LibmanAuditTask>
-    
-    <Message Text="Found @(VulnerableLibmanPackages->Count()) vulnerable packages in libman.json" 
-             Importance="High" 
-             Condition="'@(VulnerableLibmanPackages)' != ''" />
-    
-    <Error Text="Vulnerable package: %(VulnerableLibmanPackages.Identity) %(VulnerableLibmanPackages.Version), Severity: %(VulnerableLibmanPackages.Severity)"
-           Condition="'%(VulnerableLibmanPackages.Severity)' == 'Critical' or '%(VulnerableLibmanPackages.Severity)' == 'High'" />
-    
-    <Warning Text="Vulnerable package: %(VulnerableLibmanPackages.Identity) %(VulnerableLibmanPackages.Version), Severity: %(VulnerableLibmanPackages.Severity)"
-             Condition="'%(VulnerableLibmanPackages.Severity)' == 'Medium' or '%(VulnerableLibmanPackages.Severity)' == 'Low'" />
+    <LibmanAuditTask LibmanJsonPath="$(MSBuildProjectDirectory)\libman.json"
+                     Condition="Exists('$(MSBuildProjectDirectory)\libman.json')" />
   </Target>
 </Project>

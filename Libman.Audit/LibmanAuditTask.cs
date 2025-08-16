@@ -9,7 +9,6 @@ public class LibmanAuditTask : Task
 {
     private readonly ILibmanJsonParser _jsonParser;
     private readonly IVulnerabilityAnalyzer _vulnerabilityAnalyzer;
-    private readonly ITaskItemConverter _taskItemConverter;
     private readonly ILogger _logger;
 
     [Required]
@@ -22,7 +21,6 @@ public class LibmanAuditTask : Task
         ILogger logger = new MsBuildLogger(Log);
 
         _jsonParser = new LibmanJsonParser(logger);
-        _taskItemConverter = new TaskItemConverter();
 
         IGitHubAdvisoryClient advisoryClient = new GitHubAdvisoryClient(httpClient);
         _vulnerabilityAnalyzer = new VulnerabilityAnalyzer(advisoryClient, logger);
@@ -41,7 +39,6 @@ public class LibmanAuditTask : Task
     {
         _jsonParser = jsonParser;
         _vulnerabilityAnalyzer = vulnerabilityAnalyzer;
-        _taskItemConverter = taskItemConverter;
         _logger = logger;
 
         // initialize non-null values

@@ -81,14 +81,3 @@ To disable Libman.Audit for a specific project, add this to your `.csproj` file:
   <SkipLibmanAudit>true</SkipLibmanAudit>
 </PropertyGroup>
 ```
-
-<!--
-### Custom libman.json Location
-
-By default, Libman.Audit looks for `libman.json` in your project root. To specify a different location:
-```
-<PropertyGroup>
-  <LibmanJsonPath>path/to/your/libman.json</LibmanJsonPath>
-</PropertyGroup>
-```
--->

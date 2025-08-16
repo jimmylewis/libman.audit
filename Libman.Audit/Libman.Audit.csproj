@@ -5,11 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    
+
     <!-- NuGet package properties -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <BuildOutputTargetFolder>build</BuildOutputTargetFolder>
     <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <NoWarn>NU5128</NoWarn>
   </PropertyGroup>
 
@@ -29,7 +31,7 @@
 
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="README.md" />
-    <None Include="..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
+    <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
   </ItemGroup>
 
 </Project>
